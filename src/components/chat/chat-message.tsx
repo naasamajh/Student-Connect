@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Message } from '@/lib/types';
@@ -5,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage }
 from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { currentUser } from '@/lib/mock-data'; // To determine if message is from current user
+import { useState, useEffect } from 'react';
 
 interface ChatMessageProps {
   message: Message;
@@ -20,12 +22,18 @@ const getInitials = (name: string = "User") => {
 
 export function ChatMessage({ message }: ChatMessageProps) {
   const isCurrentUserMessage = message.senderId === currentUser.id;
-  const messageDate = new Date(message.timestamp);
-  const formattedTime = messageDate.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  });
+  const [formattedTime, setFormattedTime] = useState<string | null>(null);
+
+  useEffect(() => {
+    const messageDate = new Date(message.timestamp);
+    setFormattedTime(
+      messageDate.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      })
+    );
+  }, [message.timestamp]);
 
   return (
     <div className={cn("flex items-end gap-2 max-w-[75%]", isCurrentUserMessage ? "ml-auto flex-row-reverse" : "mr-auto")}>
@@ -47,7 +55,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
             "text-xs mt-1",
             isCurrentUserMessage ? "text-primary-foreground/70 text-right" : "text-muted-foreground/70 text-left"
         )}>
-            {formattedTime}
+            {formattedTime || '...'}
         </p>
       </div>
     </div>
