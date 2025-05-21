@@ -9,7 +9,7 @@ import { ChatMessage } from './chat-message';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Send, Paperclip, Smile, Search, ArrowLeft, Info, Loader2 } from 'lucide-react';
+import { Send, Paperclip, Smile, Search, ArrowLeft, Info, Loader2, MessageSquare } from 'lucide-react';
 import { Card, CardHeader, CardFooter } from '@/components/ui/card'; // Removed CardContent as it's not directly used here
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
