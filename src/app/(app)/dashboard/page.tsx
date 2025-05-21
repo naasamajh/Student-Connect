@@ -1,7 +1,7 @@
 
 import { currentUser, mockEvents, mockGroups } from "@/lib/mock-data";
 import { SmartConnectForm } from "@/components/smart-connect-form";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowRight, CalendarDays, Users, Activity } from "lucide-react";
