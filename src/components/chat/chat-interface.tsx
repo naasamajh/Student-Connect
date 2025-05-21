@@ -20,14 +20,17 @@ const getInitials = (name: string = "User") => {
   return names.length > 1 ? `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase() : name.substring(0, 2).toUpperCase();
 };
 
-export function ChatInterface() {
+interface ChatInterfaceProps {
+  initialSelectedChatId?: string | null;
+}
+
+export function ChatInterface({ initialSelectedChatId }: ChatInterfaceProps) {
   const { currentUser, loading: authLoading } = useAuth();
   const [allChats, setAllChats] = useState<Chat[]>(initialMockChats);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Prepare lists for ChatList
   const [individualUsers, setIndividualUsers] = useState<UserProfile[]>([]);
   const [groupChats, setGroupChats] = useState<Chat[]>([]);
 
@@ -39,19 +42,24 @@ export function ChatInterface() {
   }, [currentUser, allChats]);
   
   useEffect(() => {
-    // Auto-select first available chat or user if nothing is selected
-    if (!authLoading && currentUser && allChats.length > 0 && !selectedChatId) {
+    if (authLoading || !currentUser) return;
+
+    if (initialSelectedChatId && allChats.some(chat => chat.id === initialSelectedChatId)) {
+      if (selectedChatId !== initialSelectedChatId) {
+        setSelectedChatId(initialSelectedChatId);
+      }
+      return; 
+    }
+
+    if (!selectedChatId && !initialSelectedChatId && allChats.length > 0) { // only run default selection if no initial and no current
       const firstIndividualChat = allChats.find(chat => !chat.isGroupChat && chat.participants.some(p => p.id === currentUser.id));
       if (firstIndividualChat) {
         setSelectedChatId(firstIndividualChat.id);
       } else if (groupChats.length > 0) {
         setSelectedChatId(groupChats[0].id);
-      } else if (individualUsers.length > 0) {
-        // If no chats exist, could pre-select first user, but let's wait for explicit selection
-        // Or, could create a chat with the first user if desired. For now, do nothing here.
       }
     }
-  }, [authLoading, currentUser, allChats, selectedChatId, groupChats, individualUsers]);
+  }, [authLoading, currentUser, allChats, selectedChatId, initialSelectedChatId, groupChats]);
 
 
   const selectedChat = allChats.find(chat => chat.id === selectedChatId);
@@ -79,7 +87,7 @@ export function ChatInterface() {
     setAllChats(prevChats =>
       prevChats.map(chat =>
         chat.id === selectedChat.id
-          ? { ...chat, messages: [...chat.messages, message], lastMessage: message }
+          ? { ...chat, messages: [...(chat.messages || []), message], lastMessage: message }
           : chat
       )
     );
@@ -110,14 +118,13 @@ export function ChatInterface() {
       if (existingChat) {
         setSelectedChatId(existingChat.id);
       } else {
-        // Create new 1-on-1 chat
         const targetUser = mockUserProfiles.find(u => u.id === targetUserId);
         if (!targetUser) return;
 
         const sortedUserIds = [currentUser.id, targetUser.id].sort();
+        // Use a consistent ID format for 1-on-1 chats.
         const newChatId = `chat_${sortedUserIds[0]}_${sortedUserIds[1]}`;
         
-        // Check if this ID already exists (edge case, e.g. if initialMockChats had it with a different ID format)
         if (allChats.some(c => c.id === newChatId)) {
              setSelectedChatId(newChatId);
              return;
@@ -131,15 +138,14 @@ export function ChatInterface() {
           ],
           messages: [],
           isGroupChat: false,
-          name: targetUser.name, // For 1-on-1, name is the other person's name
+          name: targetUser.name, 
           unreadCount: 0,
         };
         setAllChats(prev => [...prev, newChat]);
         setSelectedChatId(newChat.id);
       }
     }
-     if (window.innerWidth < 768 && selectedChatId !== null) { // md breakpoint
-      // Effectively re-triggers selection to hide list on mobile
+     if (window.innerWidth < 768 && selectedChatId !== null) { 
     }
   };
 
@@ -156,7 +162,6 @@ export function ChatInterface() {
   return (
     <Card className="h-[calc(100vh-10rem)] md:h-[calc(100vh-12rem)] w-full flex flex-col shadow-2xl overflow-hidden">
       <div className="flex h-full">
-        {/* Chat List Sidebar */}
         <div className={cn(
             "w-full md:w-1/3 lg:w-1/4 border-r flex-col bg-muted/10",
             selectedChatId && "hidden md:flex" 
@@ -177,7 +182,6 @@ export function ChatInterface() {
           />
         </div>
 
-        {/* Chat Window */}
         <div className={cn(
             "flex-1 flex-col",
             !selectedChatId && "hidden md:flex", 
@@ -209,7 +213,7 @@ export function ChatInterface() {
               </CardHeader>
               
               <ScrollArea className="flex-1 p-4 space-y-4 bg-background">
-                {selectedChat.messages.map(msg => (
+                {(selectedChat.messages || []).map(msg => (
                   <ChatMessage key={msg.id} message={msg} currentUserId={currentUser.id} />
                 ))}
                 <div ref={messagesEndRef} />

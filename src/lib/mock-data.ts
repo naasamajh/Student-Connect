@@ -1,3 +1,4 @@
+
 import type { UserProfile, Group, Event, Chat, Message } from './types';
 
 export const mockUserProfiles: UserProfile[] = [
@@ -115,44 +116,96 @@ export const mockEvents: Event[] = [
   },
 ];
 
-export const mockMessages: Message[] = [
-  { id: 'msg1', senderId: 'user2', chatId: 'chat1', content: 'Hey Alice, saw your post in the AI club. Interesting stuff!', timestamp: Date.now() - 2 * 60 * 60 * 1000, senderName: 'Bob The Builder', senderAvatar: mockUserProfiles[1].avatarUrl },
-  { id: 'msg2', senderId: 'user1', chatId: 'chat1', content: 'Thanks Bob! Glad you liked it. Are you going to the seminar next week?', timestamp: Date.now() - 1 * 60 * 60 * 1000, senderName: 'Alice Wonderland', senderAvatar: mockUserProfiles[0].avatarUrl },
-  { id: 'msg3', senderId: 'user3', chatId: 'chat2', content: 'Diana, that was a great point in the debate club today!', timestamp: Date.now() - 30 * 60 * 1000, senderName: 'Charlie Brown', senderAvatar: mockUserProfiles[2].avatarUrl },
+const baseMessagesUser1ToUser2: Message[] = [
+    { id: 'msg1-1', chatId: 'chat_user1_user2', senderId: 'user1', content: 'Hey Bob, how is the new project going?', timestamp: Date.now() - 5 * 60 * 60 * 1000, senderName: mockUserProfiles[0].name, senderAvatar: mockUserProfiles[0].avatarUrl },
+    { id: 'msg1-2', chatId: 'chat_user1_user2', senderId: 'user2', content: 'Hi Alice! It\'s challenging but fun. Learned a lot about React Hooks.', timestamp: Date.now() - 4 * 60 * 60 * 1000, senderName: mockUserProfiles[1].name, senderAvatar: mockUserProfiles[1].avatarUrl },
 ];
 
+const baseMessagesUser3ToUser4: Message[] = [
+    { id: 'msg2-1', chatId: 'chat_user3_user4', senderId: 'user3', content: 'Diana, that debate was intense! You were great.', timestamp: Date.now() - 2 * 60 * 60 * 1000, senderName: mockUserProfiles[2].name, senderAvatar: mockUserProfiles[2].avatarUrl },
+    { id: 'msg2-2', chatId: 'chat_user3_user4', senderId: 'user4', content: 'Thanks Charlie! It was a good discussion. We should grab coffee and talk more about it.', timestamp: Date.now() - 1 * 60 * 60 * 1000, senderName: mockUserProfiles[3].name, senderAvatar: mockUserProfiles[3].avatarUrl },
+];
+
+const group1ChatMessages: Message[] = [
+    { id: 'g1msg1', chatId: 'group1', senderId: 'user1', content: 'Welcome to the AI Enthusiasts Club chat!', timestamp: Date.now() - 24 * 60 * 60 * 1000, senderName: mockUserProfiles[0].name, senderAvatar: mockUserProfiles[0].avatarUrl },
+    { id: 'g1msg2', chatId: 'group1', senderId: 'user2', content: 'Excited to be here! Any cool projects starting soon?', timestamp: Date.now() - 23 * 60 * 60 * 1000, senderName: mockUserProfiles[1].name, senderAvatar: mockUserProfiles[1].avatarUrl },
+];
+const group2ChatMessages: Message[] = [
+    { id: 'g2msg1', chatId: 'group2', senderId: 'user1', content: 'Anyone up for a photo walk this weekend in the Photography Club?', timestamp: Date.now() - 10 * 60 * 60 * 1000, senderName: mockUserProfiles[0].name, senderAvatar: mockUserProfiles[0].avatarUrl },
+];
+const group3ChatMessages: Message[] = [
+    { id: 'g3msg1', chatId: 'group3', senderId: 'user2', content: 'Robotics Club meeting tonight to discuss the hackathon!', timestamp: Date.now() - 5 * 60 * 60 * 1000, senderName: mockUserProfiles[1].name, senderAvatar: mockUserProfiles[1].avatarUrl },
+];
+
+
 export const mockChats: Chat[] = [
+  // 1-on-1 Chats
   {
-    id: 'chat1',
+    id: 'chat_user1_user2', // Consistent ID for user1 & user2 chat
     participants: [
       { id: mockUserProfiles[0].id, name: mockUserProfiles[0].name, avatarUrl: mockUserProfiles[0].avatarUrl },
       { id: mockUserProfiles[1].id, name: mockUserProfiles[1].name, avatarUrl: mockUserProfiles[1].avatarUrl },
     ],
-    messages: [mockMessages[0], mockMessages[1]],
-    lastMessage: mockMessages[1],
-    name: 'Bob The Builder', // In a 1:1 chat, this would be the other person's name
+    messages: baseMessagesUser1ToUser2,
+    lastMessage: baseMessagesUser1ToUser2[baseMessagesUser1ToUser2.length - 1],
+    name: mockUserProfiles[1].name, // Partner's name
+    isGroupChat: false,
     unreadCount: 1,
   },
   {
-    id: 'chat2',
+    id: 'chat_user3_user4', // Consistent ID for user3 & user4 chat
     participants: [
       { id: mockUserProfiles[2].id, name: mockUserProfiles[2].name, avatarUrl: mockUserProfiles[2].avatarUrl },
       { id: mockUserProfiles[3].id, name: mockUserProfiles[3].name, avatarUrl: mockUserProfiles[3].avatarUrl },
     ],
-    messages: [mockMessages[2]],
-    lastMessage: mockMessages[2],
-    name: 'Diana Prince',
+    messages: baseMessagesUser3ToUser4,
+    lastMessage: baseMessagesUser3ToUser4[baseMessagesUser3ToUser4.length - 1],
+    name: mockUserProfiles[3].name, // Partner's name
+    isGroupChat: false,
     unreadCount: 0,
   },
+  // Group Chats - IDs now match group IDs
   {
-    id: 'groupChat1',
-    participants: [ // In a real app, this would be populated with group members
-      { id: mockUserProfiles[0].id, name: mockUserProfiles[0].name, avatarUrl: mockUserProfiles[0].avatarUrl },
-      { id: mockUserProfiles[1].id, name: mockUserProfiles[1].name, avatarUrl: mockUserProfiles[1].avatarUrl },
-    ],
-    messages: [],
-    name: 'AI Enthusiasts Club Chat',
+    id: 'group1', // Matches mockGroups[0].id
+    participants: mockGroups[0].members.map(m => ({ id: m.id, name: m.name, avatarUrl: m.avatarUrl })),
+    messages: group1ChatMessages,
+    lastMessage: group1ChatMessages.length > 0 ? group1ChatMessages[group1ChatMessages.length -1] : undefined,
+    name: mockGroups[0].name,
     isGroupChat: true,
-    unreadCount: 3,
+    unreadCount: 2,
+  },
+  {
+    id: 'group2', // Matches mockGroups[1].id
+    participants: mockGroups[1].members.map(m => ({ id: m.id, name: m.name, avatarUrl: m.avatarUrl })),
+    messages: group2ChatMessages,
+    lastMessage: group2ChatMessages.length > 0 ? group2ChatMessages[group2ChatMessages.length -1] : undefined,
+    name: mockGroups[1].name,
+    isGroupChat: true,
+    unreadCount: 1,
+  },
+  {
+    id: 'group3', // Matches mockGroups[2].id
+    participants: mockGroups[2].members.map(m => ({ id: m.id, name: m.name, avatarUrl: m.avatarUrl })),
+    messages: group3ChatMessages,
+    lastMessage: group3ChatMessages.length > 0 ? group3ChatMessages[group3ChatMessages.length -1] : undefined,
+    name: mockGroups[2].name,
+    isGroupChat: true,
+    unreadCount: 0,
   }
 ];
+
+// Ensure all UserProfile instances in mockChats participants have avatarUrl
+mockChats.forEach(chat => {
+  chat.participants.forEach(p => {
+    if (!p.avatarUrl) {
+      const user = mockUserProfiles.find(up => up.id === p.id);
+      p.avatarUrl = user?.avatarUrl || `https://placehold.co/100x100.png?text=${p.name?.substring(0,1) || 'U'}`;
+    }
+  });
+  chat.messages.forEach(m => {
+     if(!m.senderAvatar) {
+        const user = mockUserProfiles.find(up => up.id === m.senderId);
+        m.senderAvatar = user?.avatarUrl || `https://placehold.co/100x100.png?text=${m.senderName?.substring(0,1) || 'U'}`;
+     }
+  });
+});

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { mockGroups, mockUserProfiles, mockEvents } from '@/lib/mock-data';
 import type { Group, UserProfile, Event } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { GroupForm } from '@/components/group-form';
 import { useToast } from '@/hooks/use-toast';
 import { EventCard } from '@/components/event-card';
-import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
+import { useAuth } from '@/contexts/AuthContext'; 
 
 const getInitials = (name: string) => {
   const names = name.split(' ');
@@ -25,8 +25,9 @@ const getInitials = (name: string) => {
 
 export default function GroupDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const groupId = params.id as string;
-  const { currentUser, loading: authLoading } = useAuth(); // Get current user
+  const { currentUser, loading: authLoading } = useAuth(); 
   
   const [group, setGroup] = useState<Group | null>(null);
   const [relatedEvents, setRelatedEvents] = useState<Event[]>([]);
@@ -35,7 +36,6 @@ export default function GroupDetailPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Simulate fetching group data
     const foundGroup = mockGroups.find(g => g.id === groupId);
     if (foundGroup) {
       const groupWithFullMembers = {
@@ -65,7 +65,6 @@ export default function GroupDetailPage() {
     
     setGroup(prev => prev ? {...prev, memberIds: updatedMemberIds, members: updatedMembers} : null);
     
-    // Update mockGroups (client-side only for demo)
     const groupIndex = mockGroups.findIndex(g => g.id === groupId);
     if (groupIndex !== -1) {
       mockGroups[groupIndex].memberIds = updatedMemberIds;
@@ -90,6 +89,12 @@ export default function GroupDetailPage() {
     }
     setIsLoadingForm(false);
     setIsEditing(false);
+  };
+
+  const handleOpenChat = () => {
+    if (group) {
+      router.push(`/messages?chatId=${group.id}`);
+    }
   };
 
   if (authLoading || !group) {
@@ -173,13 +178,13 @@ export default function GroupDetailPage() {
             </Card>
 
             <Card className="md:col-span-2 bg-muted/30">
-              <CardHeader><CardTitle className="text-lg flex items-center"><MessageSquare className="mr-2 h-5 w-5 text-primary"/>Group Chat (Coming Soon)</CardTitle></CardHeader>
-              <CardContent className="h-60 flex items-center justify-center">
-                <p className="text-muted-foreground">Group chat and discussion board features are under development.</p>
+              <CardHeader><CardTitle className="text-lg flex items-center"><MessageSquare className="mr-2 h-5 w-5 text-primary"/>Group Chat</CardTitle></CardHeader>
+              <CardContent className="h-60 flex flex-col items-center justify-center text-center">
+                <p className="text-muted-foreground mb-4">Join the conversation with group members.</p>
+                <Button onClick={handleOpenChat} className="w-full md:w-auto">
+                  Open Chat
+                </Button>
               </CardContent>
-              <CardFooter>
-                <Button disabled className="w-full">Open Chat</Button>
-              </CardFooter>
             </Card>
           </div>
           
