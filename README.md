@@ -1,5 +1,3 @@
-# Firebase Studio
+# Student Connect - Nexus
 
-This is a NextJS starter in Firebase Studio.
-
-To get started, take a look at src/app/page.tsx.
+Students struggle to connect beyond their classes, limiting collaboration. Develop a frontend solution for a student-only platform to help them discover and connect with peers.
