@@ -65,8 +65,19 @@ const generateConnectionSuggestionFlow = ai.defineFlow(
     inputSchema: GenerateConnectionSuggestionInputSchema,
     outputSchema: GenerateConnectionSuggestionOutputSchema,
   },
-  async input => {
+  async (input): Promise<GenerateConnectionSuggestionOutput> => {
     const {output} = await prompt(input);
-    return output!;
+    if (!output) {
+      // This condition implies that the LLM response was successfully received
+      // but failed to parse or conform to the GenerateConnectionSuggestionOutputSchema,
+      // or the model explicitly returned a structure that resulted in a null 'output'.
+      console.error(
+        'generateConnectionSuggestionFlow: AI model generated a response, but it did not conform to the expected output schema or was empty.'
+      );
+      throw new Error(
+        'AI model output error. The response could not be processed.'
+      );
+    }
+    return output;
   }
 );
