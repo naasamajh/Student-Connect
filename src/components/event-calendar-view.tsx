@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import * as React from 'react'; // Added this line
+import { useState } from 'react';
 import { Calendar } from "@/components/ui/calendar";
 import type { Event } from "@/lib/types";
 import { EventCard } from "./event-card";
