@@ -1,7 +1,8 @@
+
 "use client";
 
 import { useParams } from 'next/navigation';
-import { mockGroups, mockUserProfiles, mockEvents, currentUser } from '@/lib/mock-data';
+import { mockGroups, mockUserProfiles, mockEvents } from '@/lib/mock-data';
 import type { Group, UserProfile, Event } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { GroupForm } from '@/components/group-form';
 import { useToast } from '@/hooks/use-toast';
 import { EventCard } from '@/components/event-card';
+import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
 
 const getInitials = (name: string) => {
   const names = name.split(' ');
@@ -24,6 +26,7 @@ const getInitials = (name: string) => {
 export default function GroupDetailPage() {
   const params = useParams();
   const groupId = params.id as string;
+  const { currentUser, loading: authLoading } = useAuth(); // Get current user
   
   const [group, setGroup] = useState<Group | null>(null);
   const [relatedEvents, setRelatedEvents] = useState<Event[]>([]);
@@ -41,7 +44,6 @@ export default function GroupDetailPage() {
       };
       setGroup(groupWithFullMembers);
       
-      // Simulate fetching related events
       const events = mockEvents.filter(event => 
         event.relatedInterests.some(interest => groupWithFullMembers.interests.includes(interest)) || event.organizer === groupWithFullMembers.name
       );
@@ -50,12 +52,11 @@ export default function GroupDetailPage() {
   }, [groupId]);
 
   const handleJoinLeaveGroup = () => {
-    if (!group) return;
+    if (!group || !currentUser) return;
     const isMember = group.memberIds.includes(currentUser.id);
-    // Simulate API call
+    
     toast({ title: isMember ? "Left Group" : "Joined Group", description: `You have ${isMember ? 'left' : 'joined'} ${group.name}.`});
     
-    // Update mock data (client-side only for demo)
     const updatedMemberIds = isMember 
       ? group.memberIds.filter(id => id !== currentUser.id)
       : [...group.memberIds, currentUser.id];
@@ -63,20 +64,27 @@ export default function GroupDetailPage() {
     const updatedMembers = updatedMemberIds.map(id => mockUserProfiles.find(p => p.id === id) as UserProfile).filter(Boolean);
     
     setGroup(prev => prev ? {...prev, memberIds: updatedMemberIds, members: updatedMembers} : null);
+    
+    // Update mockGroups (client-side only for demo)
+    const groupIndex = mockGroups.findIndex(g => g.id === groupId);
+    if (groupIndex !== -1) {
+      mockGroups[groupIndex].memberIds = updatedMemberIds;
+      mockGroups[groupIndex].members = updatedMembers;
+    }
   };
   
   const handleSaveEditedGroup = async (groupData: Omit<Group, 'id' | 'members'> & { id?: string, memberIds: string[] }) => {
     setIsLoadingForm(true);
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000)); 
     
     if (group && groupData.id === group.id) {
       const updatedMembers = groupData.memberIds.map(id => mockUserProfiles.find(p => p.id === id) as UserProfile).filter(Boolean);
-      const updatedGroup = { ...group, ...groupData, members: updatedMembers };
-      setGroup(updatedGroup);
-      // Update mockGroups array (for demo purposes, normally backend handles this)
+      const updatedGroupDetails = { ...group, ...groupData, members: updatedMembers };
+      setGroup(updatedGroupDetails);
+      
       const groupIndex = mockGroups.findIndex(g => g.id === group.id);
       if (groupIndex !== -1) {
-        mockGroups[groupIndex] = { ...mockGroups[groupIndex], ...groupData };
+        mockGroups[groupIndex] = { ...mockGroups[groupIndex], ...updatedGroupDetails, memberIds: groupData.memberIds };
       }
       toast({ title: "Group Updated", description: `${groupData.name} has been updated successfully.` });
     }
@@ -84,8 +92,7 @@ export default function GroupDetailPage() {
     setIsEditing(false);
   };
 
-
-  if (!group) {
+  if (authLoading || !group) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -94,8 +101,8 @@ export default function GroupDetailPage() {
     );
   }
   
-  const isCreator = group.createdBy === currentUser.id;
-  const isMember = group.memberIds.includes(currentUser.id);
+  const isCreator = currentUser && group.createdBy === currentUser.id;
+  const isMember = currentUser && group.memberIds.includes(currentUser.id);
 
   return (
     <div className="space-y-8">
@@ -129,22 +136,24 @@ export default function GroupDetailPage() {
         <CardContent className="p-6 md:p-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <p className="text-muted-foreground leading-relaxed md:max-w-2xl">{group.description}</p>
-            <div className="flex gap-2 flex-shrink-0">
-              {isCreator && (
-                 <Dialog open={isEditing} onOpenChange={setIsEditing}>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" className="shadow-sm"><Edit3 className="mr-2 h-4 w-4" />Edit Group</Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[625px]">
-                      <DialogHeader><DialogTitle>Edit Group</DialogTitle></DialogHeader>
-                      <GroupForm group={group} onSave={handleSaveEditedGroup} isLoading={isLoadingForm} />
-                    </DialogContent>
-                  </Dialog>
-              )}
-               <Button onClick={handleJoinLeaveGroup} className="shadow-sm bg-primary hover:bg-primary/90">
-                  <UserPlus className="mr-2 h-4 w-4" /> {isMember ? 'Leave Group' : 'Join Group'}
-              </Button>
-            </div>
+            {currentUser && (
+              <div className="flex gap-2 flex-shrink-0">
+                {isCreator && (
+                  <Dialog open={isEditing} onOpenChange={setIsEditing}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" className="shadow-sm"><Edit3 className="mr-2 h-4 w-4" />Edit Group</Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[625px]">
+                        <DialogHeader><DialogTitle>Edit Group</DialogTitle></DialogHeader>
+                        <GroupForm group={group} onSave={handleSaveEditedGroup} isLoading={isLoadingForm} currentUserId={currentUser.id} />
+                      </DialogContent>
+                    </Dialog>
+                )}
+                <Button onClick={handleJoinLeaveGroup} className="shadow-sm bg-primary hover:bg-primary/90">
+                    <UserPlus className="mr-2 h-4 w-4" /> {isMember ? 'Leave Group' : 'Join Group'}
+                </Button>
+              </div>
+            )}
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

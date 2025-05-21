@@ -1,7 +1,8 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
-import type { Group, UserProfile } from "@/lib/types";
+import type { Group } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,12 +11,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from "@/hooks/use-toast";
 import { Save, Loader2, X, PlusCircle } from "lucide-react";
 import { Badge } from "./ui/badge";
-import { currentUser } from "@/lib/mock-data"; // Assuming current user is needed to set 'createdBy'
 
 interface GroupFormProps {
-  group?: Group; // Optional: for editing an existing group
-  onSave: (groupData: Omit<Group, 'id' | 'members' | 'memberIds'> & { id?: string, memberIds: string[] }) => Promise<void>;
+  group?: Group; 
+  onSave: (groupData: Omit<Group, 'id' | 'members'> & { id?: string }) => Promise<void>;
   isLoading: boolean;
+  currentUserId: string; // Added to ensure createdBy and initial member is set
 }
 
 const initialGroupState: Omit<Group, 'id' | 'members' | 'memberIds' | 'createdBy'> = {
@@ -25,19 +26,27 @@ const initialGroupState: Omit<Group, 'id' | 'members' | 'memberIds' | 'createdBy
   imageUrl: "",
 };
 
-export function GroupForm({ group, onSave, isLoading }: GroupFormProps) {
-  const [formData, setFormData] = useState(group ? { ...group } : { ...initialGroupState, createdBy: currentUser.id, memberIds: [currentUser.id] });
+export function GroupForm({ group, onSave, isLoading, currentUserId }: GroupFormProps) {
+  const [formData, setFormData] = useState(() => 
+    group 
+    ? { ...group } 
+    : { ...initialGroupState, createdBy: currentUserId, memberIds: [currentUserId], interests: [] as string[] }
+  );
   const [currentInterest, setCurrentInterest] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
     if (group) {
-      setFormData({ ...group });
+      setFormData({ ...group, interests: group.interests || [] }); // Ensure interests is always an array
     } else {
-      // For new groups, ensure createdBy and initial member (creator) is set
-      setFormData(prev => ({ ...prev, createdBy: currentUser.id, memberIds: Array.from(new Set([...(prev.memberIds || []), currentUser.id])) }));
+      setFormData({ 
+        ...initialGroupState, 
+        createdBy: currentUserId, 
+        memberIds: [currentUserId],
+        interests: [] // Explicitly initialize interests for new group
+      });
     }
-  }, [group]);
+  }, [group, currentUserId]);
 
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -45,14 +54,14 @@ export function GroupForm({ group, onSave, isLoading }: GroupFormProps) {
   };
 
   const handleAddInterest = () => {
-    if (currentInterest.trim() && !formData.interests.includes(currentInterest.trim())) {
-      setFormData(prev => ({ ...prev, interests: [...prev.interests, currentInterest.trim()] }));
+    if (currentInterest.trim() && !(formData.interests || []).includes(currentInterest.trim())) {
+      setFormData(prev => ({ ...prev, interests: [...(prev.interests || []), currentInterest.trim()] }));
       setCurrentInterest("");
     }
   };
 
   const handleRemoveInterest = (interestToRemove: string) => {
-    setFormData(prev => ({ ...prev, interests: prev.interests.filter(interest => interest !== interestToRemove) }));
+    setFormData(prev => ({ ...prev, interests: (prev.interests || []).filter(interest => interest !== interestToRemove) }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -69,15 +78,16 @@ export function GroupForm({ group, onSave, isLoading }: GroupFormProps) {
     const dataToSave: Omit<Group, 'id' | 'members'> & { id?: string } = {
       name: formData.name,
       description: formData.description,
-      interests: formData.interests,
+      interests: formData.interests || [],
       imageUrl: formData.imageUrl,
-      createdBy: formData.createdBy || currentUser.id,
-      memberIds: formData.memberIds || [currentUser.id]
+      createdBy: formData.createdBy || currentUserId,
+      memberIds: Array.from(new Set([...(formData.memberIds || []), currentUserId])) // Ensure creator is a member
     };
+
     if (group?.id) {
       dataToSave.id = group.id;
     }
-
+    
     await onSave(dataToSave);
   };
 
@@ -114,7 +124,7 @@ export function GroupForm({ group, onSave, isLoading }: GroupFormProps) {
               <Button type="button" variant="outline" onClick={handleAddInterest}><PlusCircle className="mr-2 h-4 w-4" />Add</Button>
             </div>
             <div className="flex flex-wrap gap-2 mt-2">
-              {formData.interests.map((interest) => (
+              {(formData.interests || []).map((interest) => (
                 <Badge key={interest} variant="secondary" className="flex items-center gap-1 pr-1">
                   {interest}
                   <Button

@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Chat } from '@/lib/types';
@@ -10,6 +11,7 @@ interface ChatListProps {
   chats: Chat[];
   selectedChatId: string | null;
   onSelectChat: (chatId: string) => void;
+  currentUserId: string; // Added to correctly identify the other participant
 }
 
 const getInitials = (name: string = "User") => {
@@ -20,22 +22,24 @@ const getInitials = (name: string = "User") => {
   return name.substring(0, 2).toUpperCase();
 };
 
-export function ChatList({ chats, selectedChatId, onSelectChat }: ChatListProps) {
+export function ChatList({ chats, selectedChatId, onSelectChat, currentUserId }: ChatListProps) {
   return (
     <ScrollArea className="h-full">
       <div className="space-y-1 p-2">
         {chats.map((chat) => {
-          const otherParticipant = chat.isGroupChat ? null : chat.participants.find(p => p.id !== 'currentUserMockId'); // Replace with actual current user ID
+          const otherParticipant = chat.isGroupChat ? null : chat.participants.find(p => p.id !== currentUserId);
           const displayName = chat.isGroupChat ? chat.name : otherParticipant?.name;
-          const displayAvatar = chat.isGroupChat ? `https://placehold.co/100x100.png?text=${getInitials(chat.name)}` : otherParticipant?.avatarUrl;
+          const displayAvatar = chat.isGroupChat 
+            ? `https://placehold.co/100x100.png?text=${getInitials(chat.name || 'Group')}` 
+            : otherParticipant?.avatarUrl;
 
           return (
             <button
               key={chat.id}
               onClick={() => onSelectChat(chat.id)}
               className={cn(
-                "w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors hover:bg-muted/80",
-                selectedChatId === chat.id ? "bg-muted shadow-inner" : ""
+                "w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors hover:bg-muted",
+                selectedChatId === chat.id ? "bg-muted shadow-inner" : "hover:bg-muted/50"
               )}
             >
               <Avatar className="h-10 w-10">
@@ -46,13 +50,13 @@ export function ChatList({ chats, selectedChatId, onSelectChat }: ChatListProps)
                 <p className="font-semibold text-sm text-foreground truncate">{displayName || 'Unnamed Chat'}</p>
                 {chat.lastMessage && (
                   <p className="text-xs text-muted-foreground truncate">
-                    {chat.lastMessage.senderName && `${chat.lastMessage.senderName}: `}
+                    {chat.lastMessage.senderId === currentUserId ? "You: " : chat.lastMessage.senderName && `${chat.lastMessage.senderName}: `}
                     {chat.lastMessage.content}
                   </p>
                 )}
               </div>
               {chat.unreadCount && chat.unreadCount > 0 && (
-                <Badge variant="default" className="h-5 px-1.5 text-xs">{chat.unreadCount}</Badge>
+                <Badge variant="default" className="h-5 px-1.5 text-xs ml-auto self-center">{chat.unreadCount}</Badge>
               )}
             </button>
           );

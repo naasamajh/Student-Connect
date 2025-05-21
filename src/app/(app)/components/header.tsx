@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -12,34 +13,34 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { Bell, Search, Settings, UserCircle2, LogOut, Moon, Sun } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { Bell, Search, Settings, UserCircle2, LogOut, Moon, Sun, LogIn } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
 import type { UserProfile } from '@/lib/types';
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AppHeaderProps {
-  user: UserProfile;
+  user: UserProfile | null; // User can be null if not logged in
 }
 
 export function AppHeader({ user }: AppHeaderProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-
   useEffect(() => {
     setMounted(true);
-    // Check initial theme
     const initialIsDarkMode = document.documentElement.classList.contains('dark');
     setIsDarkMode(initialIsDarkMode);
   }, []);
-
 
   const getPageTitle = () => {
     const segments = pathname.split('/').filter(Boolean);
     if (segments.length === 0 || segments[0] === 'dashboard') return 'Dashboard';
     const title = segments[0].charAt(0).toUpperCase() + segments[0].slice(1);
-    if (segments.length > 1 && segments[0] === 'groups' && segments[1] !== 'new') return 'Group Details'; // crude way to check for specific group page
+    if (segments.length > 1 && segments[0] === 'groups' && segments[1] !== 'new') return 'Group Details';
     return title;
   };
   
@@ -55,9 +56,13 @@ export function AppHeader({ user }: AppHeaderProps) {
     }
     return name.substring(0, 2).toUpperCase();
   };
+
+  const handleLogout = async () => {
+    await logout();
+    // router.push('/login') is handled by AuthContext logout or AppLayout effect
+  };
   
   if (!mounted) {
-    // Render a placeholder or null to avoid hydration mismatch
     return <div className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 shadow-sm" />;
   }
 
@@ -88,38 +93,45 @@ export function AppHeader({ user }: AppHeaderProps) {
           <span className="sr-only">Notifications</span>
         </Button>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={user.avatarUrl} alt={user.name} />
-                <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-              </Avatar>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>
-              <div className="flex flex-col">
-                <span className="font-medium">{user.name}</span>
-                <span className="text-xs text-muted-foreground">{user.email}</span>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <UserCircle2 className="mr-2 h-4 w-4" />
-              <span>Profile</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Logout</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {user ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user.avatarUrl} alt={user.name} />
+                  <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>
+                <div className="flex flex-col">
+                  <span className="font-medium">{user.name}</span>
+                  <span className="text-xs text-muted-foreground">{user.email}</span>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => router.push('/profile')}>
+                <UserCircle2 className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem> {/* onClick={() => router.push('/settings')} */}
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Logout</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+           <Button variant="ghost" onClick={() => router.push('/login')}>
+            <LogIn className="mr-2 h-4 w-4" />
+            Login
+          </Button>
+        )}
       </div>
     </header>
   );

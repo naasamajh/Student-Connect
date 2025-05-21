@@ -1,7 +1,8 @@
+
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,14 +23,14 @@ import {
   MessageSquare,
   Settings,
   LogOut,
-  Lightbulb,
   Network,
 } from 'lucide-react';
 import type { UserProfile } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SidebarNavProps {
-  user: UserProfile;
+  user: UserProfile | null; // User can be null
 }
 
 const navItems = [
@@ -42,6 +43,8 @@ const navItems = [
 
 export function SidebarNav({ user }: SidebarNavProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = useAuth();
   const { state: sidebarState } = useSidebar();
 
   const getInitials = (name: string) => {
@@ -51,6 +54,25 @@ export function SidebarNav({ user }: SidebarNavProps) {
     }
     return name.substring(0, 2).toUpperCase();
   };
+
+  const handleLogout = async () => {
+    await logout();
+    // router.push('/login') handled by AuthContext or AppLayout
+  };
+  
+  if (!user) {
+    // This part should ideally not be reached if AppLayout protection is effective
+    return (
+      <SidebarHeader className="p-4 border-b border-sidebar-border">
+         <div className="flex items-center gap-3">
+            <Network className="h-8 w-8 text-sidebar-primary" />
+            {sidebarState === 'expanded' && (
+              <h1 className="text-xl font-semibold text-sidebar-foreground">Nexus</h1>
+            )}
+        </div>
+      </SidebarHeader>
+    );
+  }
 
   return (
     <>
@@ -108,18 +130,18 @@ export function SidebarNav({ user }: SidebarNavProps) {
             )}
           </Button>
         </Link>
-         {sidebarState === 'expanded' && (
-           <Button variant="ghost" className="w-full justify-start gap-2 text-sidebar-foreground/80 hover:text-sidebar-foreground mt-2">
+         <Button 
+            variant="ghost" 
+            onClick={handleLogout}
+            className={cn(
+                "w-full justify-start gap-2 text-sidebar-foreground/80 hover:text-sidebar-foreground mt-2",
+                sidebarState === 'collapsed' && "justify-center aspect-square p-0"
+            )}
+            tooltip={sidebarState === 'collapsed' ? "Logout" : undefined}
+          >
             <LogOut className="h-5 w-5" />
-            <span>Logout</span>
+            {sidebarState === 'expanded' && <span>Logout</span>}
           </Button>
-         )}
-         {sidebarState === 'collapsed' && (
-           <Button variant="ghost" size="icon" className="w-full aspect-square text-sidebar-foreground/80 hover:text-sidebar-foreground mt-2">
-            <LogOut className="h-5 w-5" />
-          </Button>
-         )}
-
       </SidebarFooter>
     </>
   );

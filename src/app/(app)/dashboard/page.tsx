@@ -1,15 +1,33 @@
 
-import { currentUser, mockEvents, mockGroups } from "@/lib/mock-data";
+"use client";
+
+import { mockEvents, mockGroups } from "@/lib/mock-data"; // Keep for now for other parts of dashboard
 import { SmartConnectForm } from "@/components/smart-connect-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowRight, CalendarDays, Users, Activity } from "lucide-react";
 import Image from "next/image";
+import { useAuth } from "@/contexts/AuthContext"; // Import useAuth
+import { Loader2 } from 'lucide-react'; // For loading state
 
 export default function DashboardPage() {
-  const upcomingEvents = mockEvents.slice(0, 2);
-  const userGroups = mockGroups.filter(g => g.memberIds.includes(currentUser.id)).slice(0, 2);
+  const { currentUser, loading } = useAuth(); // Get currentUser from AuthContext
+
+  // Example data, can be filtered based on currentUser later
+  const upcomingEvents = mockEvents.slice(0, 2); 
+  // Filter groups based on the authenticated user's ID if available and groups have member IDs
+  const userGroups = currentUser ? mockGroups.filter(g => g.memberIds.includes(currentUser.id)).slice(0, 2) : [];
+
+
+  if (loading || !currentUser) {
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="ml-4 text-xl text-muted-foreground">Loading dashboard...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -103,7 +121,7 @@ export default function DashboardPage() {
                 </Link>
               ))
             ) : (
-              <p className="text-muted-foreground">You haven't joined any groups yet.</p>
+              <p className="text-muted-foreground">You haven't joined any groups yet. Explore and join some!</p>
             )}
           </CardContent>
            <CardFooter>

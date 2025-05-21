@@ -1,5 +1,6 @@
+
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Zap, Users, CalendarDays } from "lucide-react";
+import { ArrowRight, Zap, Users, CalendarDays, LogIn, UserPlus } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -8,9 +9,16 @@ export default function LandingPage() {
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-background to-secondary">
       <header className="p-6 flex justify-between items-center">
         <h1 className="text-3xl font-bold text-primary">Nexus</h1>
-        <nav>
-          <Link href="/dashboard">
-            <Button variant="ghost">Go to App</Button>
+        <nav className="flex gap-2">
+          <Link href="/login">
+            <Button variant="ghost">
+              <LogIn className="mr-2 h-4 w-4" /> Login
+            </Button>
+          </Link>
+          <Link href="/signup">
+            <Button>
+              <UserPlus className="mr-2 h-4 w-4" /> Sign Up
+            </Button>
           </Link>
         </nav>
       </header>
@@ -33,9 +41,9 @@ export default function LandingPage() {
           find exciting events, and build meaningful connections beyond the classroom.
         </p>
         
-        <Link href="/dashboard">
+        <Link href="/signup">
           <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transform hover:scale-105 transition-transform">
-            Explore Nexus <ArrowRight className="ml-2 h-5 w-5" />
+            Get Started <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         </Link>
 

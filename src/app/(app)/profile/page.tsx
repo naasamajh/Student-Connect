@@ -1,25 +1,57 @@
-"use client"; // Required because we use useState for form and onSave simulation
 
-import { useState } from 'react';
+"use client";
+
+import { useState, useEffect } from 'react';
 import { UserProfileCard } from "@/components/user-profile-card";
 import { ProfileForm } from "@/components/profile-form";
-import { currentUser as initialUser } from "@/lib/mock-data";
 import type { UserProfile } from "@/lib/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserCircle2, Edit3 } from "lucide-react";
+import { UserCircle2, Edit3, Loader2 } from "lucide-react";
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ProfilePage() {
-  const [user, setUser] = useState<UserProfile>(initialUser);
+  const { currentUser, setCurrentUser, loading: authLoading } = useAuth();
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const { toast } = useToast();
 
-  // Simulate saving the profile
-  const handleSaveProfile = async (updatedProfile: UserProfile) => {
-    console.log("Saving profile:", updatedProfile);
-    // Simulate API call delay
+  useEffect(() => {
+    if (currentUser) {
+      setUser(currentUser);
+    }
+  }, [currentUser]);
+
+  const handleSaveProfile = async (updatedProfileData: UserProfile) => {
+    if (!currentUser || !user) {
+      toast({ title: "Error", description: "No user data found.", variant: "destructive"});
+      return;
+    }
+    
+    // Simulate API call delay / Firebase update
+    // In a real app:
+    // 1. await updateProfile(auth.currentUser, { displayName: updatedProfileData.name, photoURL: updatedProfileData.avatarUrl });
+    // 2. await setDoc(doc(db, "users", currentUser.id), updatedProfileData);
     await new Promise(resolve => setTimeout(resolve, 1000));
-    setUser(updatedProfile);
-    // In a real app, you would make an API call here
-    // and handle success/error states.
+    
+    const updatedUser = { ...currentUser, ...updatedProfileData };
+    setUser(updatedUser); // Update local state for immediate UI refresh
+    setCurrentUser(updatedUser); // Update context state
+    
+    toast({
+        title: "Profile Updated",
+        description: "Your profile information has been saved.",
+      });
   };
+
+  if (authLoading || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="ml-4 text-xl text-muted-foreground">Loading profile...</p>
+      </div>
+    );
+  }
+
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
